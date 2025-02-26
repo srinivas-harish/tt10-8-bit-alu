@@ -5,58 +5,43 @@
 
 `default_nettype none
 
-module tt_um_l2 (
-    input  wire [7:0] ui_in,    
-    output wire [7:0] uo_out,   
-    input  wire [7:0] uio_in,   
-    output wire [7:0] uio_out,  
-    output wire [7:0] uio_oe,   
-    input  wire       ena,      
-    input  wire       clk,      
-    input  wire       rst_n     
+module tt_um_l3 (
+    input  wire [7:0] ui_in,     
+    output wire [7:0] uo_out,    
+    input  wire [7:0] uio_in,    
+    output wire [7:0] uio_out,   
+    output wire [7:0] uio_oe,    
+    input  wire       ena,       
+    input  wire       clk,       
+    input  wire       rst_n      
 );
 
-   
-  wire [15:0] input_vector;
-  assign input_vector = {ui_in, uio_in};
+    // Use B[2:0] as the rotation amount  
+    wire [2:0] rotate_amount = uio_in[2:0];
+    wire [7:0] input_a = ui_in;  // A[7:0]
 
-  
-  reg [7:0] priority_out;
+    // Output register for the rotated result
+    reg [7:0] rotated_output;
 
-   
-  always @(*) begin
-    if (input_vector == 16'b0000_0000_0000_0000) begin
-      priority_out = 8'b1111_0000;   
-    end else begin
-      priority_out = 8'b0000_0000;   
-      casez (input_vector)
-        16'b1???_????_????_????: priority_out = 8'd15;
-        16'b01??_????_????_????: priority_out = 8'd14;
-        16'b001?_????_????_????: priority_out = 8'd13;
-        16'b0001_????_????_????: priority_out = 8'd12;
-        16'b0000_1???_????_????: priority_out = 8'd11;
-        16'b0000_01??_????_????: priority_out = 8'd10;
-        16'b0000_001?_????_????: priority_out = 8'd9;
-        16'b0000_0001_????_????: priority_out = 8'd8;
-        16'b0000_0000_1???_????: priority_out = 8'd7;
-        16'b0000_0000_01??_????: priority_out = 8'd6;
-        16'b0000_0000_001?_????: priority_out = 8'd5;
-        16'b0000_0000_0001_????: priority_out = 8'd4;
-        16'b0000_0000_0000_1???: priority_out = 8'd3;
-        16'b0000_0000_0000_01??: priority_out = 8'd2;
-        16'b0000_0000_0000_001?: priority_out = 8'd1;
-        16'b0000_0000_0000_0001: priority_out = 8'd0;
-        default: priority_out = 8'b0000_0000;
-      endcase
+    //   left rotation of A by rotate_amount positions
+    always @(*) begin
+        case (rotate_amount)
+            3'd0:  rotated_output = input_a;                     
+            3'd1:  rotated_output = {input_a[6:0], input_a[7]};  
+            3'd2:  rotated_output = {input_a[5:0], input_a[7:6]};  
+            3'd3:  rotated_output = {input_a[4:0], input_a[7:5]};  
+            3'd4:  rotated_output = {input_a[3:0], input_a[7:4]};  
+            3'd5:  rotated_output = {input_a[2:0], input_a[7:3]};  
+            3'd6:  rotated_output = {input_a[1:0], input_a[7:2]};  
+            3'd7:  rotated_output = {input_a[0], input_a[7:1]};    
+            default: rotated_output = input_a;                    // Default (shouldn't occur)
+        endcase
     end
-  end
-
-  
-  assign uo_out = priority_out;
-  assign uio_out = 8'b0;
-  assign uio_oe = 8'b0;
-
-   
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+ 
+    assign uo_out = rotated_output;
+    assign uio_out = 8'b0;
+    assign uio_oe = 8'b0;
+ 
+    wire _unused = &{ena, clk, rst_n, uio_in[7:3], 1'b0};
 
 endmodule
