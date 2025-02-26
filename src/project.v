@@ -7,24 +7,23 @@
 `default_nettype none
 
 module tt_um_l2 (
-    input  wire [7:0] ui_in,    
-    output wire [7:0] uo_out,   
-    input  wire [7:0] uio_in,   
-    output wire [7:0] uio_out,  
-    output wire [7:0] uio_oe,   
-    input  wire       ena,      
-    input  wire       clk,      
-    input  wire       rst_n     
+    input  wire [7:0] ui_in,     
+    output wire [7:0] uo_out,    
+    input  wire [7:0] uio_in,    
+    output wire [7:0] uio_out,   
+    output wire [7:0] uio_oe,    
+    input  wire       ena,       
+    input  wire       clk,       
+    input  wire       rst_n      
 );
  
-    wire [7:0] A = ui_in;        // Input A to rotate
-    wire [7:0] B = uio_in;       // Input B, use B[2:0] as rotation selector
-    wire [2:0] rotate_amount = B[2:0];  // 3-bit selector for rotation (0-7)
-
-    //  for the rotated result
+    wire [7:0] A = ui_in;        
+    wire [7:0] B = uio_in;       
+    wire [2:0] rotate_amount = B[2:0];   
+ 
     reg [7:0] C;
 
-    // for left circular rotation
+    //  for left circular rotation
     always @(*) begin
         case (rotate_amount)
             3'b000: C = A;                    
@@ -39,9 +38,9 @@ module tt_um_l2 (
         endcase
     end
  
-    assign uo_out = C;         
-    assign uio_out = 8'b0;     
-    assign uio_oe = 8'b0;      
+    assign uo_out = C;          
+    assign uio_out = 8'b0;      
+    assign uio_oe = 8'b0;       
  
     wire _unused = &{ena, clk, rst_n, 1'b0};
 
