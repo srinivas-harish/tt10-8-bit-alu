@@ -1,45 +1,40 @@
-/*
- * Copyright (c) 2025 Your Name
- * SPDX-License-Identifier: Apache-2.0
- */
+# SPDX-FileCopyrightText: © 2025 Tiny Tapeout
+# SPDX-License-Identifier: Apache-2.0
 
-`default_nettype none
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import ClockCycles
 
-module tt_um_l2 (
-    input  wire [7:0] ui_in,    
-    output wire [7:0] uo_out,   
-    input  wire [7:0] uio_in,   
-    output wire [7:0] uio_out,  
-    output wire [7:0] uio_oe,   
-    input  wire       ena,      
-    input  wire       clk,      
-    input  wire       rst_n     
-);
+@cocotb.test()
+async def test_project(dut):
+    dut._log.info("Start")
  
-  wire [2:0] pattern = uio_in[2:0];
+    clock = Clock(dut.clk, 10, units="us")
+    cocotb.start_soon(clock.start())
+ 
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    dut.ui_in.value = 0
+    dut.uio_in.value = 0
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst_n.value = 1
+
+    dut._log.info("Test Bitwise Pattern Weaver behavior")
   
-  //  for combinational logic
-  reg [7:0] woven_output;
-
-  //  from A and B based on pattern
-  always @(*) begin
-    case (pattern)
-      3'b000: woven_output = {A[6:0], B[0]};          
-      3'b001: woven_output = {A[5:0], B[1:0]};        
-      3'b010: woven_output = {A[4:0], B[2:0]};        
-      3'b011: woven_output = {A[3:0], B[3:0]};        
-      3'b100: woven_output = {A[2:0], B[4:0]};        
-      3'b101: woven_output = {A[1:0], B[5:0]};        
-      3'b110: woven_output = {A[0], B[6:0]};          
-      3'b111: woven_output = B;                       
-      default: woven_output = A;                      // Default to A if pattern is invalid (shouldn't happen)
-    endcase
-  end
+    dut.ui_in.value = 0b10101010   
+    dut.uio_in.value = 0b11001100  
+    await ClockCycles(dut.clk, 1)
+    assert dut.uo_out.value == 0b10101010, f"Expected 10101010, got {bin(dut.uo_out.value)}"
  
-  assign uo_out = woven_output;
-  assign uio_out = 8'b0;
-  assign uio_oe = 8'b0;
- 
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+    dut.ui_in.value = 0b10101010   
+    dut.uio_in.value = 0b11001111  
+    await ClockCycles(dut.clk, 1)
+    assert dut.uo_out.value == 0b10101100, f"Expected 10101100, got {bin(dut.uo_out.value)}"
+  
+    dut.ui_in.value = 0b10101010  
+    dut.uio_in.value = 0b11001100 
+    await ClockCycles(dut.clk, 1)
+    assert dut.uo_out.value == 0b11001100, f"Expected 11001100, got {bin(dut.uo_out.value)}"
 
-endmodule
+    dut._log.info("All tests passed!")
